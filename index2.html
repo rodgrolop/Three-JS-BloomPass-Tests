@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - molecules</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link type="text/css" rel="stylesheet" href="main.css">
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/108/three.min.js"></script>
+		<script src="pdbloader.js"></script>		
+	</head>
+	<body>
+		<div id="container"></div>
+		<script type="module">
+			
+			var camera, scene, renderer, labelRenderer;
+			var controls;
+			var root;
+			var loader = new THREE.PDBLoader();
+			var offset = new THREE.Vector3();
+			init();
+			animate();
+			function init() {
+				scene = new THREE.Scene();
+				scene.background = new THREE.Color( 0x050505 );
+				camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 5000 );
+				camera.position.z = 500;
+				scene.add( camera );
+				var light = new THREE.DirectionalLight( 0xffffff, 0.8 );
+				light.position.set( 1, 1, 1 );
+				scene.add( light );
+				var light = new THREE.DirectionalLight( 0xffffff, 0.5 );
+				light.position.set( - 1, - 1, 1 );
+				scene.add( light );
+				root = new THREE.Group();
+				scene.add( root );
+				//
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				document.getElementById( 'container' ).appendChild( renderer.domElement );
+				//
+				loadMolecule( 'caffeine.pdb' );
+				//
+				window.addEventListener( 'resize', onWindowResize, false );
+			}
+			//
+			function loadMolecule( url ) {
+				while ( root.children.length > 0 ) {
+					var object = root.children[ 0 ];
+					object.parent.remove( object );
+				}
+				loader.load( url, function ( pdb ) {
+					var geometryAtoms = pdb.geometryAtoms;
+					var geometryBonds = pdb.geometryBonds;
+					var json = pdb.json;
+					var lineMaterial = new THREE.LineBasicMaterial({
+							color: 0xffffff
+						});
+					var lineGeometry = new THREE.Geometry();
+					var sphereGeometry = new THREE.IcosahedronBufferGeometry( 1, 2 );
+					geometryAtoms.computeBoundingBox();
+					geometryAtoms.boundingBox.getCenter( offset ).negate();
+					geometryAtoms.translate( offset.x, offset.y, offset.z );
+					geometryBonds.translate( offset.x, offset.y, offset.z );
+					var positions = geometryAtoms.getAttribute( 'position' );
+					var colors = geometryAtoms.getAttribute( 'color' );
+					var position = new THREE.Vector3();
+					var color = new THREE.Color();
+					for ( var i = 0; i < positions.count; i ++ ) {
+						position.x = positions.getX( i );
+						position.y = positions.getY( i );
+						position.z = positions.getZ( i );
+						color.r = colors.getX( i );
+						color.g = colors.getY( i );
+						color.b = colors.getZ( i );
+						var material = new THREE.MeshBasicMaterial( { wireframe: true, color:color } );
+						var object = new THREE.Mesh( sphereGeometry, material );
+						object.position.copy( position );
+						object.position.multiplyScalar( 75 );
+						object.scale.multiplyScalar( 10 );
+						root.add( object );
+					}
+					positions = geometryBonds.getAttribute( 'position' );
+					for ( var i = 0; i < positions.count; i += 2 ) {
+						let start = new THREE.Vector3();
+						let end = new THREE.Vector3();
+						start.x = positions.getX( i );
+						start.y = positions.getY( i );
+						start.z = positions.getZ( i );
+						end.x = positions.getX( i + 1 );
+						end.y = positions.getY( i + 1 );
+						end.z = positions.getZ( i + 1 );
+						start.multiplyScalar( 75 );
+						end.multiplyScalar( 75 );
+						lineGeometry.vertices.push(start,end);						
+						let line = new THREE.LineSegments( lineGeometry, lineMaterial );
+						// line.position.copy( start );
+						// line.position.lerp( end, 0.5 );
+						// // line.scale.set( 5, 5, start.distanceTo( end ) );
+						// line.lookAt( end );
+						root.add( line );
+					}
+					render();
+				} );
+			}
+			//
+			function onWindowResize() {
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				labelRenderer.setSize( window.innerWidth, window.innerHeight );
+				render();
+			}
+			function animate() {
+				requestAnimationFrame( animate );
+				render();
+			}
+			function render() {
+				renderer.render( scene, camera );
+			}
+		</script>
+	</body>
+</html>
