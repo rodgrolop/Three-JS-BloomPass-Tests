@@ -142,9 +142,11 @@
 			};
 			function setupScene() {
 
+				scene.traverse( disposeMaterial );
+
 				var loader = new THREE.SVGLoader();
 				var glowColor = new THREE.Color( 0xff0000 );
-				var pathColor = new THREE.Color( 0x00ff00 );
+				var pathColor = new THREE.Color( 0x000000 );
 
 				var materialGlow = new THREE.MeshBasicMaterial( {
 					color: glowColor,
@@ -196,14 +198,14 @@
 							} );
 							for ( var j = 0, jl = path.subPaths.length; j < jl; j ++ ) {
 								var subPath = path.subPaths[ j ];
-								var geometry = THREE.SVGLoader.pointsToStroke( subPath.getPoints(), {strokeLineCap: "butt",strokeLineJoin: "miter",strokeMiterLimit: 4,strokeOpacity: 1,strokeWidth: 1} );
+								var geometry = THREE.SVGLoader.pointsToStroke( subPath.getPoints(), {strokeLineCap: "butt",strokeLineJoin: "miter",strokeMiterLimit: 4,strokeOpacity: 1,strokeWidth: 5} );
 								if ( geometry ) {
 									var mesh = new THREE.Mesh( geometry, material );
 									group.add( mesh );
 								}
 							}						
 						}
-				
+						group.rotateY(150);
 						scene.add( group );
 				
 					},
